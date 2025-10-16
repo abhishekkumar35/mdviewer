@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown File Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background-color: white;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fa;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: #e3f2fd;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .preview-area {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            min-height: 300px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .markdown-content h1 {
+            font-size: 2rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3rem;
+        }
+
+        .markdown-content h3 { font-size: 1.25rem; }
+        .markdown-content h4 { font-size: 1rem; }
+        .markdown-content h5 { font-size: 0.875rem; }
+        .markdown-content h6 { font-size: 0.85rem; }
+
+        .markdown-content p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #666;
+            font-style: italic;
+        }
+
+        .markdown-content code {
+            background-color: #f1f3f4;
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875em;
+        }
+
+        .markdown-content pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .markdown-content a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 2rem 0;
+        }
+
+        .btn-clear {
+            transition: all 0.3s ease;
+        }
+
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+            
+            .preview-area {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-file-markdown mr-2"></i>
+                Markdown File Viewer
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Upload Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-upload mr-2"></i>
+                            Upload Markdown File
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="uploadArea" class="upload-area">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h5>Drag &amp; Drop your markdown file here</h5>
+                            <p class="text-muted mb-3">or click to browse files</p>
+                            <button type="button" class="btn btn-primary" id="browseBtn">
+                                <i class="fas fa-folder-open mr-2"></i>
+                                Browse Files
+                            </button>
+                        </div>
+                        <input type="file" id="fileInput" class="file-input" accept=".md,.markdown" />
+                        
+                        <!-- File Info -->
+                        <div id="fileInfo" class="file-info d-none">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-file-alt mr-2 text-success"></i>
+                                        <span id="fileName"></span>
+                                    </h6>
+                                    <small class="text-muted">
+                                        Size: <span id="fileSize"></span> | 
+                                        Type: <span id="fileType"></span>
+                                    </small>
+                                </div>
+                                <button class="btn btn-outline-danger btn-sm btn-clear" id="clearBtn">
+                                    <i class="fas fa-times mr-1"></i>
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Alert Messages -->
+                        <div id="alertContainer" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-eye mr-2"></i>
+                            Markdown Preview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="previewArea" class="preview-area">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-file-markdown" style="font-size: 3rem; opacity: 0.3;"></i>
+                                <p class="mt-3">Upload a markdown file to see the preview</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">
+                <i class="fas fa-code mr-2"></i>
+                Simple Markdown File Viewer - Built with HTML, CSS, JavaScript &amp; Bootstrap
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        class MarkdownViewer {
+            constructor() {
+                this.uploadArea = document.getElementById('uploadArea');
+                this.fileInput = document.getElementById('fileInput');
+                this.browseBtn = document.getElementById('browseBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.fileInfo = document.getElementById('fileInfo');
+                this.fileName = document.getElementById('fileName');
+                this.fileSize = document.getElementById('fileSize');
+                this.fileType = document.getElementById('fileType');
+                this.previewArea = document.getElementById('previewArea');
+                this.alertContainer = document.getElementById('alertContainer');
+                
+                this.maxFileSize = 10 * 1024 * 1024; // 10MB
+                this.allowedTypes = ['.md', '.markdown'];
+                
+                this.initEventListeners();
+            }
+            
+            initEventListeners() {
+                // File input change
+                this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                
+                // Browse button click
+                this.browseBtn.addEventListener('click', () => this.fileInput.click());
+                
+                // Upload area click
+                this.uploadArea.addEventListener('click', () => this.fileInput.click());
+                
+                // Drag and drop events
+                this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+                this.uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+                this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
+                
+                // Clear button
+                this.clearBtn.addEventListener('click', () => this.clearFile());
+            }
+            
+            handleDragOver(e) {
+                e.preventDefault();
+                this.uploadArea.classList.add('dragover');
+            }
+            
+            handleDragLeave(e) {
+                e.preventDefault();
+                this.uploadArea.classList.remove('dragover');
+            }
+            
+            handleDrop(e) {
+                e.preventDefault();
+                this.uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+            
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.processFile(file);
+                }
+            }
+            
+            processFile(file) {
+                // Validate file type
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                if (!this.allowedTypes.includes(fileExtension)) {
+                    this.showAlert('Please select a valid markdown file (.md or .markdown)', 'danger');
+                    return;
+                }
+                
+                // Validate file size
+                if (file.size > this.maxFileSize) {
+                    this.showAlert('File size too large. Maximum size is 10MB.', 'danger');
+                    return;
+                }
+                
+                // Show file info
+                this.displayFileInfo(file);
+                
+                // Read and process file
+                this.readFile(file);
+            }
+            
+            displayFileInfo(file) {
+                this.fileName.textContent = file.name;
+                this.fileSize.textContent = this.formatFileSize(file.size);
+                this.fileType.textContent = file.type || 'text/markdown';
+                
+                this.fileInfo.classList.remove('d-none');
+                this.fileInfo.classList.add('fade-in');
+                
+                this.clearAlerts();
+            }
+            
+            readFile(file) {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        const htmlContent = this.parseMarkdown(content);
+                        this.displayPreview(htmlContent);
+                        this.showAlert('File loaded successfully!', 'success');
+                    } catch (error) {
+                        this.showAlert('Failed to read file: ' + error.message, 'danger');
+                    }
+                };
+                
+                reader.onerror = () => {
+                    this.showAlert('Failed to read file', 'danger');
+                };
+                
+                reader.readAsText(file);
+            }
+            
+            parseMarkdown(markdown) {
+                let html = markdown;
+                
+                // Escape HTML characters first
+                html = html.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+                
+                // Headers (H1-H6)
+                html = html.replace(/^#{6}\s+(.+)$/gm, '<h6>$1</h6>');
+                html = html.replace(/^#{5}\s+(.+)$/gm, '<h5>$1</h5>');
+                html = html.replace(/^#{4}\s+(.+)$/gm, '<h4>$1</h4>');
+                html = html.replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>');
+                html = html.replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>');
+                html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>');
+                
+                // Horizontal rules
+                html = html.replace(/^\s*[-*_]{3,}\s*$/gm, '<hr>');
+                
+                // Code blocks (triple backticks)
+                html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+                
+                // Inline code
+                html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // Bold and italic
+                html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+                html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                html = html.replace(/___([^_]+)___/g, '<strong><em>$1</em></strong>');
+                html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+                html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+                
+                // Links
+                html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+                
+                // Blockquotes
+                html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+                
+                // Unordered lists
+                html = html.replace(/^\s*[-*+]\s+(.+)$/gm, '<li>$1</li>');
+                html = html.replace(/((<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>');
+                
+                // Ordered lists
+                html = html.replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>');
+                html = html.replace(/((<li>.*<\/li>\s*)+)/g, function(match) {
+                    if (match.includes('<ul>')) return match;
+                    return '<ol>' + match + '</ol>';
+                });
+                
+                // Paragraphs (convert double newlines to paragraph breaks)
+                html = html.replace(/\n\s*\n/g, '</p><p>');
+                html = '<p>' + html + '</p>';
+                
+                // Clean up empty paragraphs
+                html = html.replace(/<p>\s*<\/p>/g, '');
+                html = html.replace(/<p>\s*(<h[1-6]>)/g, '$1');
+                html = html.replace(/(<\/h[1-6]>)\s*<\/p>/g, '$1');
+                html = html.replace(/<p>\s*(<hr>)/g, '$1');
+                html = html.replace(/(<hr>)\s*<\/p>/g, '$1');
+                html = html.replace(/<p>\s*(<ul>|<ol>|<blockquote>)/g, '$1');
+                html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>)\s*<\/p>/g, '$1');
+                html = html.replace(/<p>\s*(<pre>)/g, '$1');
+                html = html.replace(/(<\/pre>)\s*<\/p>/g, '$1');
+                
+                // Line breaks
+                html = html.replace(/\n/g, '<br>');
+                
+                return html;
+            }
+            
+            displayPreview(htmlContent) {
+                this.previewArea.innerHTML = `<div class="markdown-content">${htmlContent}</div>`;
+                this.previewArea.classList.add('fade-in');
+            }
+            
+            clearFile() {
+                this.fileInput.value = '';
+                this.fileInfo.classList.add('d-none');
+                this.previewArea.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-file-markdown" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-3">Upload a markdown file to see the preview</p>
+                    </div>
+                `;
+                this.clearAlerts();
+            }
+            
+            showAlert(message, type) {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                `;
+                
+                this.alertContainer.innerHTML = alertHtml;
+                
+                // Auto-hide success alerts after 3 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        const alert = this.alertContainer.querySelector('.alert');
+                        if (alert) {
+                            $(alert).alert('close');
+                        }
+                    }, 3000);
+                }
+            }
+            
+            clearAlerts() {
+                this.alertContainer.innerHTML = '';
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new MarkdownViewer();
+        });
+    </script>
+</body>
+</html>
