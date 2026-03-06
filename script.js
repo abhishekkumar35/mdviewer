@@ -10,6 +10,7 @@ class MarkdownViewer {
         this.uploadOtherBtn = document.getElementById('uploadOtherBtn');
         this.downloadPdfBtn = document.getElementById('downloadPdfBtn');
         this.downloadMdBtn = document.getElementById('downloadMdBtn');
+        this.editBtn = document.getElementById('editBtn');
         this.pasteArea = document.getElementById('pasteArea');
         this.markdownInput = document.getElementById('markdownInput');
         this.cancelPasteBtn = document.getElementById('cancelPasteBtn');
@@ -17,6 +18,8 @@ class MarkdownViewer {
         this.togglePasteSection = document.getElementById('togglePasteSection');
         this.showPasteAreaBtn = document.getElementById('showPasteAreaBtn');
         this.previewArea = document.getElementById('previewArea');
+        this.editArea = document.getElementById('editArea');
+        this.editInput = document.getElementById('editInput');
         this.alertContainer = document.getElementById('alertContainer');
 
         this.maxFileSize = 10 * 1024 * 1024; // 10MB
@@ -37,11 +40,15 @@ class MarkdownViewer {
         // Browse button click (prevent event bubbling which triggered double file input clicks)
         this.browseBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (this.isEditMode) this.toggleEditMode(); // Exit edit mode if user uploads
             this.fileInput.click();
         });
 
         // Upload area click
-        this.uploadArea.addEventListener('click', () => this.fileInput.click());
+        this.uploadArea.addEventListener('click', () => {
+            if (this.isEditMode) this.toggleEditMode();
+            this.fileInput.click();
+        });
 
         // Drag and drop events
         this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
@@ -102,6 +109,11 @@ class MarkdownViewer {
         // Download MD Button
         if (this.downloadMdBtn) {
             this.downloadMdBtn.addEventListener('click', () => this.downloadAsMd());
+        }
+
+        // Edit Button
+        if (this.editBtn) {
+            this.editBtn.addEventListener('click', () => this.toggleEditMode());
         }
     }
 
@@ -193,6 +205,11 @@ class MarkdownViewer {
 
         // Save to Local Storage
         this.saveToLocalStorage();
+
+        // Ensure we are in preview mode when rendering
+        if (this.isEditMode) {
+            this.toggleEditMode();
+        }
 
         window.scrollTo(0, 0); // Scroll to top for better reading experience
     }
@@ -326,6 +343,10 @@ class MarkdownViewer {
         this.markdownInput.value = '';
         this.currentMarkdownText = '';
 
+        if (this.isEditMode) {
+            this.toggleEditMode();
+        }
+
         // Switch sections back
         this.previewSection.classList.add('d-none');
         this.uploadSection.classList.remove('d-none');
@@ -385,6 +406,39 @@ class MarkdownViewer {
             // Auto-populate paste area text if user decides to edit after reloading
             if (this.markdownInput) {
                 this.markdownInput.value = savedContent;
+            }
+        }
+    }
+
+    toggleEditMode() {
+        this.isEditMode = !this.isEditMode;
+
+        if (this.isEditMode) {
+            // Switch to Edit Mode
+            this.editBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Save';
+            this.editBtn.classList.remove('btn-outline-warning');
+            this.editBtn.classList.add('btn-warning');
+
+            this.previewArea.classList.add('d-none');
+            this.editArea.classList.remove('d-none');
+
+            this.editInput.value = this.currentMarkdownText;
+            this.editInput.focus();
+        } else {
+            // Save and Switch to Preview
+            this.editBtn.innerHTML = '<i class="fas fa-edit mr-1"></i> Edit';
+            this.editBtn.classList.remove('btn-warning');
+            this.editBtn.classList.add('btn-outline-warning');
+
+            this.editArea.classList.add('d-none');
+            this.previewArea.classList.remove('d-none');
+
+            const newContent = this.editInput.value;
+            if (newContent !== this.currentMarkdownText) {
+                // If text changed, update via standard process workflow
+                // Set flag to false briefly so it doesn't infinite toggle inside processContent
+                this.isEditMode = false;
+                this.processContent(newContent, this.currentFileName);
             }
         }
     }
