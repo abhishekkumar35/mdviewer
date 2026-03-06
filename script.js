@@ -9,11 +9,22 @@ class MarkdownViewer {
         this.clearBtnTop = document.getElementById('clearBtnTop');
         this.uploadOtherBtn = document.getElementById('uploadOtherBtn');
         this.downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        this.downloadMdBtn = document.getElementById('downloadMdBtn');
+        this.pasteArea = document.getElementById('pasteArea');
+        this.markdownInput = document.getElementById('markdownInput');
+        this.cancelPasteBtn = document.getElementById('cancelPasteBtn');
+        this.previewPastedBtn = document.getElementById('previewPastedBtn');
+        this.togglePasteSection = document.getElementById('togglePasteSection');
+        this.showPasteAreaBtn = document.getElementById('showPasteAreaBtn');
         this.previewArea = document.getElementById('previewArea');
         this.alertContainer = document.getElementById('alertContainer');
 
         this.maxFileSize = 10 * 1024 * 1024; // 10MB
         this.allowedTypes = ['.md', '.markdown'];
+
+        this.currentMarkdownText = "";
+        this.currentFileName = "";
+        this.isPastedMode = false;
 
         this.initEventListeners();
     }
@@ -52,6 +63,44 @@ class MarkdownViewer {
         // Download PDF button
         if (this.downloadPdfBtn) {
             this.downloadPdfBtn.addEventListener('click', () => this.downloadAsPdf());
+        }
+
+        // Show Paste Area
+        if (this.showPasteAreaBtn) {
+            this.showPasteAreaBtn.addEventListener('click', () => {
+                this.uploadArea.classList.add('d-none');
+                this.togglePasteSection.classList.add('d-none');
+                this.pasteArea.classList.remove('d-none');
+                this.markdownInput.focus();
+            });
+        }
+
+        // Cancel Paste Area
+        if (this.cancelPasteBtn) {
+            this.cancelPasteBtn.addEventListener('click', () => {
+                this.pasteArea.classList.add('d-none');
+                this.uploadArea.classList.remove('d-none');
+                this.togglePasteSection.classList.remove('d-none');
+                this.markdownInput.value = '';
+            });
+        }
+
+        // Preview Pasted Text
+        if (this.previewPastedBtn) {
+            this.previewPastedBtn.addEventListener('click', () => {
+                const content = this.markdownInput.value.trim();
+                if (!content) {
+                    this.showAlert('Please enter some markdown text to preview', 'danger');
+                    return;
+                }
+                this.isPastedMode = true;
+                this.processContent(content, 'pasted_document.md');
+            });
+        }
+
+        // Download MD Button
+        if (this.downloadMdBtn) {
+            this.downloadMdBtn.addEventListener('click', () => this.downloadAsMd());
         }
     }
 
@@ -112,14 +161,8 @@ class MarkdownViewer {
         reader.onload = (e) => {
             try {
                 const content = e.target.result;
-                const htmlContent = this.parseMarkdown(content);
-                this.displayPreview(htmlContent);
-
-                // Shrink upload section and show preview
-                this.uploadSection.classList.add('d-none');
-                this.previewSection.classList.remove('d-none');
-                this.previewSection.classList.add('fade-in');
-                window.scrollTo(0, 0); // Scroll to top for better reading experience
+                this.isPastedMode = false;
+                this.processContent(content, file.name);
             } catch (error) {
                 this.showAlert('Failed to read file: ' + error.message, 'danger');
             }
@@ -131,6 +174,25 @@ class MarkdownViewer {
 
         reader.readAsText(file);
     }
+
+    processContent(content, fileName) {
+        this.currentMarkdownText = content;
+        this.currentFileName = fileName || 'document.md';
+
+        const htmlContent = this.parseMarkdown(content);
+        this.displayPreview(htmlContent);
+
+        // Shrink upload section and show preview
+        this.uploadSection.classList.add('d-none');
+        this.previewSection.classList.remove('d-none');
+        this.previewSection.classList.add('fade-in');
+
+        // Show Download MD button
+        if (this.downloadMdBtn) this.downloadMdBtn.classList.remove('d-none');
+
+        window.scrollTo(0, 0); // Scroll to top for better reading experience
+    }
+
 
     parseMarkdown(markdown) {
         let html = markdown;
@@ -238,14 +300,37 @@ class MarkdownViewer {
         });
     }
 
+    downloadAsMd() {
+        if (!this.currentMarkdownText) return;
+
+        const blob = new Blob([this.currentMarkdownText], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this.currentFileName || 'document.md';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showAlert('Markdown file downloaded successfully!', 'success');
+    }
+
     clearFile() {
         this.clearFileSelection();
         this.previewArea.innerHTML = '';
+        this.markdownInput.value = '';
+        this.currentMarkdownText = '';
 
         // Switch sections back
         this.previewSection.classList.add('d-none');
         this.uploadSection.classList.remove('d-none');
         this.uploadSection.classList.add('fade-in');
+
+        // Restore Upload Area State
+        this.pasteArea.classList.add('d-none');
+        this.uploadArea.classList.remove('d-none');
+        this.togglePasteSection.classList.remove('d-none');
 
         this.clearAlerts();
     }

@@ -59,6 +59,25 @@
                         <input type="file" id="fileInput" class="file-input" accept=".md,.markdown"
                             aria-label="Upload Markdown file" />
 
+                        <!-- Paste Text Area -->
+                        <div id="pasteArea" class="d-none">
+                            <textarea id="markdownInput" class="form-control" rows="8"
+                                placeholder="Paste or type your markdown text here..."></textarea>
+                            <div class="mt-3 text-right">
+                                <button type="button" class="btn btn-outline-secondary mr-2" id="cancelPasteBtn"><i
+                                        class="fas fa-times mr-1"></i> Cancel</button>
+                                <button type="button" class="btn btn-primary" id="previewPastedBtn"><i
+                                        class="fas fa-eye mr-1"></i> Preview Text</button>
+                            </div>
+                        </div>
+
+                        <!-- Toggle Paste Area Button -->
+                        <div class="text-center mt-3" id="togglePasteSection">
+                            <button type="button" class="btn btn-link text-muted" id="showPasteAreaBtn">
+                                <i class="fas fa-paste mr-1"></i> Or paste markdown text
+                            </button>
+                        </div>
+
                         <!-- Alert Messages -->
                         <div id="alertContainer" class="mt-3"></div>
                     </div>
@@ -76,6 +95,9 @@
                             Markdown Preview
                         </h2>
                         <div>
+                            <button type="button" class="btn btn-outline-info btn-sm mr-2" id="downloadMdBtn">
+                                <i class="fas fa-file-download mr-1"></i> Download .md
+                            </button>
                             <button type="button" class="btn btn-outline-success btn-sm mr-2" id="downloadPdfBtn">
                                 <i class="fas fa-file-pdf mr-1"></i> Download PDF
                             </button>
