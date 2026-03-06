@@ -27,6 +27,7 @@ class MarkdownViewer {
         this.isPastedMode = false;
 
         this.initEventListeners();
+        this.loadFromLocalStorage();
     }
 
     initEventListeners() {
@@ -190,6 +191,9 @@ class MarkdownViewer {
         // Show Download MD button
         if (this.downloadMdBtn) this.downloadMdBtn.classList.remove('d-none');
 
+        // Save to Local Storage
+        this.saveToLocalStorage();
+
         window.scrollTo(0, 0); // Scroll to top for better reading experience
     }
 
@@ -332,6 +336,10 @@ class MarkdownViewer {
         this.uploadArea.classList.remove('d-none');
         this.togglePasteSection.classList.remove('d-none');
 
+        // Clear Local Storage
+        localStorage.removeItem('mdViewer_content');
+        localStorage.removeItem('mdViewer_filename');
+
         this.clearAlerts();
     }
 
@@ -359,6 +367,26 @@ class MarkdownViewer {
 
     clearAlerts() {
         this.alertContainer.innerHTML = '';
+    }
+
+    saveToLocalStorage() {
+        if (this.currentMarkdownText) {
+            localStorage.setItem('mdViewer_content', this.currentMarkdownText);
+            localStorage.setItem('mdViewer_filename', this.currentFileName || 'document.md');
+        }
+    }
+
+    loadFromLocalStorage() {
+        const savedContent = localStorage.getItem('mdViewer_content');
+        const savedFileName = localStorage.getItem('mdViewer_filename');
+
+        if (savedContent) {
+            this.processContent(savedContent, savedFileName || 'document.md');
+            // Auto-populate paste area text if user decides to edit after reloading
+            if (this.markdownInput) {
+                this.markdownInput.value = savedContent;
+            }
+        }
     }
 }
 
