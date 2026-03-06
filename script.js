@@ -302,12 +302,14 @@ class MarkdownViewer {
 
         // Configuration for html2pdf. Use html2canvas to ensure all languages (e.g. Hindi/Indic)
         // render correctly through the browser's native text painting.
+        // We add pagebreak logic to prevent lines of text or images from being cut in half during pagination.
         const opt = {
             margin: 10,
             filename: `${baseFileName}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
         html2pdf().set(opt).from(element).save().then(() => {
